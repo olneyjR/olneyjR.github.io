@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jeffrey Olney</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* Catppuccin Mocha */
+    :root {
+      --base:    #1e1e2e;
+      --mantle:  #181825;
+      --crust:   #11111b;
+      --surface0:#313244;
+      --surface1:#45475a;
+      --surface2:#585b70;
+      --overlay0:#6c7086;
+      --overlay1:#7f849c;
+      --text:    #cdd6f4;
+      --subtext0:#a6adc8;
+      --subtext1:#bac2de;
+      --lavender:#b4befe;
+      --blue:    #89b4fa;
+      --sapphire:#74c7ec;
+      --sky:     #89dceb;
+      --teal:    #94e2d5;
+      --green:   #a6e3a1;
+      --yellow:  #f9e2af;
+      --peach:   #fab387;
+      --mauve:   #cba6f7;
+      --red:     #f38ba8;
+      --maroon:  #eba0ac;
+      --pink:    #f5c2e7;
+      --flamingo:#f2cdcd;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--base);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      min-height: 100vh;
+      padding: 2rem;
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    /* Scanline overlay for depth */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .terminal-window {
+      background: var(--mantle);
+      border: 1px solid var(--surface0);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px var(--surface1);
+    }
+
+    .terminal-bar {
+      background: var(--crust);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--surface0);
+    }
+
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot.red    { background: var(--red); }
+    .dot.yellow { background: var(--yellow); }
+    .dot.green  { background: var(--green); }
+
+    .terminal-title {
+      margin-left: auto;
+      margin-right: auto;
+      color: var(--overlay0);
+      font-size: 12px;
+      transform: translateX(-20px);
+    }
+
+    .terminal-body {
+      padding: 1.5rem 2rem 2rem;
+    }
+
+    /* Prompt line */
+    .prompt {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 0.25rem;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+    .prompt.visible { opacity: 1; }
+
+    .prompt-user  { color: var(--green); font-weight: 700; }
+    .prompt-at    { color: var(--overlay1); }
+    .prompt-host  { color: var(--blue); font-weight: 700; }
+    .prompt-sep   { color: var(--overlay1); }
+    .prompt-path  { color: var(--yellow); }
+    .prompt-sym   { color: var(--mauve); margin: 0 6px; }
+    .prompt-cmd   { color: var(--text); }
+
+    /* Blinking cursor */
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1.1em;
+      background: var(--mauve);
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+      margin-left: 2px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* Output blocks */
+    .output {
+      margin: 0.5rem 0 1.5rem 0;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .output.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .output p {
+      color: var(--subtext1);
+      margin-bottom: 0.75rem;
+      max-width: 680px;
+    }
+
+    .output h3 {
+      color: var(--lavender);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+      margin-top: 0.25rem;
+    }
+
+    .output ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .output ul li::before {
+      content: '→ ';
+      color: var(--mauve);
+    }
+
+    .output ul li {
+      color: var(--subtext1);
+      margin-bottom: 0.2rem;
+    }
+
+    /* Links */
+    .output a {
+      text-decoration: none;
+      color: var(--blue);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .output a:hover {
+      color: var(--sapphire);
+      border-bottom-color: var(--sapphire);
+    }
+
+    /* Projects grid */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .project-card {
+      background: var(--surface0);
+      border: 1px solid var(--surface1);
+      border-radius: 6px;
+      padding: 1rem;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .project-card:hover {
+      border-color: var(--mauve);
+      background: var(--surface1);
+    }
+
+    .project-name {
+      color: var(--green);
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 0.3rem;
+    }
+
+    .project-desc {
+      color: var(--subtext0);
+      font-size: 12px;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+
+    .project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: var(--surface1);
+      color: var(--overlay1);
+    }
+
+    .project-links {
+      margin-top: 0.5rem;
+      display: flex;
+      gap: 1rem;
+    }
+
+    .project-links a {
+      font-size: 11px;
+      color: var(--blue) !important;
+    }
+
+    /* Skills table */
+    .skills-group {
+      margin-bottom: 0.75rem;
+    }
+
+    .skills-label {
+      color: var(--peach);
+      font-size: 12px;
+      display: inline-block;
+      width: 160px;
+    }
+
+    .skills-items {
+      color: var(--subtext1);
+      font-size: 12px;
+    }
+
+    /* Contact links inline */
+    .contact-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .contact-list li::before { content: '→ '; color: var(--mauve); }
+
+    .contact-list a { color: var(--blue) !important; }
+
+    /* Interests pills */
+    .interests-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 0.25rem;
+    }
+
+    .interest-pill {
+      background: var(--surface0);
+      border: 1px solid var(--surface1);
+      color: var(--lavender);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+    }
+
+    /* Footer */
+    .terminal-footer {
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--surface0);
+      color: var(--overlay0);
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .terminal-footer a {
+      color: var(--mauve);
+      text-decoration: none;
+    }
+
+    @media (max-width: 600px) {
+      body { padding: 1rem; font-size: 12px; }
+      .terminal-body { padding: 1rem; }
+      .projects-grid { grid-template-columns: 1fr; }
+      .skills-label { width: 120px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal-window">
+    <div class="terminal-bar">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+      <div class="terminal-title">jeffrey@olney ~ zsh</div>
+    </div>
+
+    <div class="terminal-body" id="terminal">
+      <!-- JS will inject everything here -->
+    </div>
+
+    <div class="terminal-footer">
+      <span>jeffrey olney · informatics analyst · mayo clinic</span>
+      <span>built with <a href="https://catppuccin.com" target="_blank">catppuccin</a></span>
+    </div>
+  </div>
+
+  <script>
+    const terminal = document.getElementById('terminal');
+
+    const PROMPT_HTML = (cmd) => `
+      <div class="prompt visible">
+        <span class="prompt-user">jeffrey</span>
+        <span class="prompt-at">@</span>
+        <span class="prompt-host">olney</span>
+        <span class="prompt-sep">&nbsp;</span>
+        <span class="prompt-path">~</span>
+        <span class="prompt-sym">❯</span>
+        <span class="prompt-cmd" id="typed-${Math.random().toString(36).slice(2)}"></span><span class="cursor"></span>
+      </div>
+    `;
+
+    const sections = [
+      {
+        cmd: 'whoami --verbose',
+        delay: 400,
+        output: `
+          <p>Informatics Analyst at <strong style="color:var(--blue)">Mayo Clinic Arizona</strong>, working remotely.</p>
+          <p>Full-stack data engineer — I own the whole pipeline: Epic Clarity SQL → Microsoft Fabric lakehouse → R Shiny dashboards → stakeholder decisions. 10+ years bridging data infrastructure and analytical insight delivery across healthcare and public health.</p>
+          <p>MBA in Technology Management · Peer-reviewed publications in computational linguistics & AI governance · Former SUNY Poly instructor.</p>
+        `
+      },
+      {
+        cmd: 'ls projects/',
+        delay: 600,
+        output: `
+          <div class="projects-grid">
+            <div class="project-card">
+              <div class="project-name">OpenSky Flight Analytics</div>
+              <div class="project-desc">Live flight tracking platform with OAuth2, custom ETL pipeline, interactive dashboards tracking 5,000+ aircraft in real-time.</div>
+              <div class="project-tags">
+                <span class="tag">Python</span><span class="tag">Dash</span><span class="tag">Plotly</span><span class="tag">OAuth2</span>
+              </div>
+              <div class="project-links"><a href="https://github.com/olneyjR" target="_blank">code</a></div>
+            </div>
+            <div class="project-card">
+              <div class="project-name">FDA Drug Safety Pipeline</div>
+              <div class="project-desc">Production data engineering pipeline with Airflow orchestration, Docker containerization, and Parquet optimization for drug safety monitoring.</div>
+              <div class="project-tags">
+                <span class="tag">Python</span><span class="tag">Airflow</span><span class="tag">Docker</span><span class="tag">Postgres</span>
+              </div>
+              <div class="project-links"><a href="https://github.com/olneyjR/mediquality-analytics" target="_blank">code</a></div>
+            </div>
+            <div class="project-card">
+              <div class="project-name">PaceWise RAG</div>
+              <div class="project-desc">Marathon training assistant using Retrieval-Augmented Generation with LangChain, ChromaDB vector search, and semantic embeddings.</div>
+              <div class="project-tags">
+                <span class="tag">Python</span><span class="tag">LangChain</span><span class="tag">ChromaDB</span><span class="tag">RAG</span>
+              </div>
+              <div class="project-links"><a href="https://github.com/olneyjR" target="_blank">code</a></div>
+            </div>
+            <div class="project-card">
+              <div class="project-name">Health Rankings ML</div>
+              <div class="project-desc">Machine learning analysis of U.S. state health outcomes using Random Forest, PCA, and K-means clustering on 2025 data.</div>
+              <div class="project-tags">
+                <span class="tag">Python</span><span class="tag">scikit-learn</span><span class="tag">R Shiny</span><span class="tag">Streamlit</span>
+              </div>
+              <div class="project-links">
+                <a href="https://health-rankings-analysis-2025.streamlit.app/" target="_blank">demo</a>
+                <a href="https://github.com/olneyjR/health-rankings-ml" target="_blank">code</a>
+              </div>
+            </div>
+            <div class="project-card">
+              <div class="project-name">Transit Sentinel</div>
+              <div class="project-desc">Urban mobility intelligence platform with Protocol Buffer binary data handling, event-driven architecture, and geospatial analysis using DuckDB.</div>
+              <div class="project-tags">
+                <span class="tag">Python</span><span class="tag">DuckDB</span><span class="tag">GTFS</span><span class="tag">Protobuf</span>
+              </div>
+              <div class="project-links"><a href="https://github.com/olneyjR" target="_blank">code</a></div>
+            </div>
+            <div class="project-card">
+              <div class="project-name">Symptom Tracker</div>
+              <div class="project-desc">Privacy-first AI symptom analysis with Groq/Llama3-70B integration, built with TypeScript and React.</div>
+              <div class="project-tags">
+                <span class="tag">TypeScript</span><span class="tag">React</span><span class="tag">Groq</span><span class="tag">Llama3</span>
+              </div>
+              <div class="project-links">
+                <a href="https://symptom-tracker-three.vercel.app/" target="_blank">demo</a>
+                <a href="https://github.com/olneyjR/symptom-tracker" target="_blank">code</a>
+              </div>
+            </div>
+          </div>
+        `
+      },
+      {
+        cmd: 'cat skills.json',
+        delay: 500,
+        output: `
+          <div class="skills-group"><span class="skills-label">languages</span><span class="skills-items">R · Python · SQL · TypeScript · HTML/CSS</span></div>
+          <div class="skills-group"><span class="skills-label">data engineering</span><span class="skills-items">Microsoft Fabric · PySpark · Airflow · dbt · Docker · Parquet</span></div>
+          <div class="skills-group"><span class="skills-label">analytics / viz</span><span class="skills-items">R Shiny · bslib · ggplot2 · Power BI · Streamlit · Plotly</span></div>
+          <div class="skills-group"><span class="skills-label">ml / ai</span><span class="skills-items">XGBoost · scikit-learn · BioBERT · LangChain · ChromaDB · RAG</span></div>
+          <div class="skills-group"><span class="skills-label">infrastructure</span><span class="skills-items">Azure · GCP · Posit Connect · Epic Clarity · Git</span></div>
+          <div class="skills-group"><span class="skills-label">databases</span><span class="skills-items">Postgres · DuckDB · SQL Server · Lakehouse</span></div>
+        `
+      },
+      {
+        cmd: 'cat interests.md',
+        delay: 400,
+        output: `
+          <div class="interests-row">
+            <span class="interest-pill">marathon running</span>
+            <span class="interest-pill">alpine touring skiing</span>
+            <span class="interest-pill">self-directed learning</span>
+            <span class="interest-pill">drumming</span>
+            <span class="interest-pill">reading</span>
+            <span class="interest-pill">open source</span>
+            <span class="interest-pill">AI governance</span>
+            <span class="interest-pill">nature</span>
+            <span class="interest-pill">dogs</span>
+          </div>
+          <p style="margin-top:0.75rem; font-size:12px; color:var(--overlay1)">2:42 Boston Marathon PR · alpine touring skier</p>
+        `
+      },
+      {
+        cmd: 'contact --list',
+        delay: 400,
+        output: `
+          <ul class="contact-list">
+            <li><a href="https://github.com/olneyjR" target="_blank">github.com/olneyjR</a></li>
+            <li><a href="https://linkedin.com/in/jeffrey-olney" target="_blank">linkedin.com/in/jeffrey-olney</a></li>
+            <li><a href="mailto:olneyjr2@gmail.com">olneyjr2@gmail.com</a></li>
+          </ul>
+          <p style="margin-top:0.75rem; font-size:12px; color:var(--overlay1)">Open to: data engineering roles · healthcare analytics · remote</p>
+        `
+      }
+    ];
+
+    function typeText(element, text, speed, callback) {
+      let i = 0;
+      // Remove the cursor from the element before typing
+      const cursor = element.nextElementSibling;
+      function tick() {
+        if (i < text.length) {
+          element.textContent += text[i++];
+          setTimeout(tick, speed + Math.random() * 30);
+        } else {
+          if (cursor) cursor.style.display = 'none';
+          if (callback) callback();
+        }
+      }
+      tick();
+    }
+
+    function renderSection(index) {
+      if (index >= sections.length) return;
+      const s = sections[index];
+
+      // Inject prompt
+      const promptDiv = document.createElement('div');
+      promptDiv.innerHTML = PROMPT_HTML(s.cmd);
+      terminal.appendChild(promptDiv.firstElementChild);
+
+      const promptEl = terminal.lastElementChild;
+      const typedEl = promptEl.querySelector('[id^="typed-"]');
+      const cursorEl = promptEl.querySelector('.cursor');
+
+      // Type the command
+      setTimeout(() => {
+        typeText(typedEl, s.cmd, 55, () => {
+          // Show output
+          setTimeout(() => {
+            const outputDiv = document.createElement('div');
+            outputDiv.className = 'output';
+            outputDiv.innerHTML = s.output;
+            terminal.appendChild(outputDiv);
+
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                outputDiv.classList.add('visible');
+              });
+            });
+
+            // Move to next section
+            setTimeout(() => renderSection(index + 1), s.delay);
+          }, 200);
+        });
+      }, index === 0 ? 800 : 300);
+    }
+
+    // Kick off
+    renderSection(0);
+  </script>
+</body>
+</html>
