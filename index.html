@@ -185,6 +185,31 @@
       border-bottom-color: var(--sapphire);
     }
 
+
+    /* Experience table */
+    .exp-table { margin-top: 0.25rem; }
+    .exp-row {
+      display: grid;
+      grid-template-columns: 220px 1fr auto;
+      gap: 0.5rem;
+      align-items: baseline;
+      margin-bottom: 0.15rem;
+    }
+    .exp-org   { color: var(--green); font-weight: 700; font-size: 13px; }
+    .exp-title { color: var(--subtext1); font-size: 12px; }
+    .exp-date  { color: var(--overlay1); font-size: 11px; white-space: nowrap; }
+    .exp-details {
+      margin: 0.3rem 0 0.1rem 0;
+      padding-left: 0.5rem;
+      border-left: 2px solid var(--surface1);
+    }
+    .exp-details div {
+      color: var(--subtext0);
+      font-size: 12px;
+      margin-bottom: 0.2rem;
+    }
+    .exp-details div::before { color: var(--mauve); }
+
     /* Projects grid */
     .projects-grid {
       display: grid;
@@ -352,13 +377,41 @@
         cmd: 'whoami --verbose',
         delay: 400,
         output: `
-          <p>I architect data pipelines and the analytics layer on top of them — the end-to-end work that's increasingly recognized as analytics engineering, sitting at the gap between roles that have traditionally been separate.</p>
-          <p>Currently at <strong style="color:var(--blue)">Mayo Clinic Arizona</strong> as an Informatics Analyst, working across Epic Clarity SQL → Microsoft Fabric lakehouse → R Shiny dashboards → stakeholder decisions. 10+ years across healthcare and public health.</p>
+          <p>I architect data pipelines and the analytics layer on top of them — the end-to-end work that's increasingly recognized as analytics engineering, sitting at the seam between roles that have traditionally been separate.</p>
+          <p>Currently at <strong style="color:var(--blue)">Mayo Clinic Arizona</strong> as an Informatics Analyst, translating raw EHR data into clinical insight at scale. 10+ years across healthcare, public health, and federal research.</p>
           <p>MBA in Technology Management · Peer-reviewed publications in computational linguistics & AI governance · Former State University of New York Polytechnic Institute instructor.</p>
         `
       },
       {
-        cmd: 'ls projects/',
+        cmd: 'cat experience.md',
+        delay: 500,
+        output: `
+          <div class="exp-table">
+            <div class="exp-row">
+              <span class="exp-org">Mayo Clinic Arizona</span>
+              <span class="exp-title">Informatics Analyst</span>
+              <span class="exp-date">2023–present</span>
+            </div>
+            <div class="exp-details">
+              <div>→ Epic Clarity SQL → Fabric Lakehouse → R/Python → clinical decision support</div>
+              <div>→ Transformer-based NLP pipeline classifying unstructured clinical notes</div>
+              <div>→ Coverage across Infection Prevention · Pharmacy · Medication Safety · Patient Safety · Surgery · Laboratory · Nursing Quality</div>
+            </div>
+            <div class="exp-row" style="margin-top:0.75rem">
+              <span class="exp-org">OHSU Hospital</span>
+              <span class="exp-title">Business Data & Financial Analyst</span>
+              <span class="exp-date">2017–2023</span>
+            </div>
+            <div class="exp-row" style="margin-top:0.5rem">
+              <span class="exp-org">Air Force Research Laboratory</span>
+              <span class="exp-title">Financial Systems Accountant</span>
+              <span class="exp-date">2014–2017</span>
+            </div>
+          </div>
+        `
+      },
+      {
+        cmd: 'ls open-source/',
         delay: 600,
         output: `
           <div class="projects-grid">
@@ -458,7 +511,7 @@
             <li><a href="https://linkedin.com/in/jeffrey-olney" target="_blank">linkedin.com/in/jeffrey-olney</a></li>
             <li><a href="mailto:olneyjr2@gmail.com">olneyjr2@gmail.com</a></li>
           </ul>
-          <p style="margin-top:0.75rem; font-size:12px; color:var(--overlay1)">Open to: data engineering roles · healthcare analytics · remote</p>
+          <p style="margin-top:0.75rem; font-size:12px; color:var(--overlay1)">Open to: data engineering · analytics engineering · data science · ML engineering · healthcare analytics · remote</p>
         `
       }
     ];
